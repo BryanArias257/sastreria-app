@@ -25,6 +25,8 @@ export default function EspacioTrabajo({ proyectoId, marcarCambio }) {
         // Set initial history state
         historialCanvas.current = [JSON.stringify(canvas)];
       });
+    } else {
+      historialCanvas.current = [JSON.stringify(canvas)];
     }
     if (proyecto && proyecto.notas) {
       setNotas(proyecto.notas);
@@ -102,7 +104,7 @@ export default function EspacioTrabajo({ proyectoId, marcarCambio }) {
       // Get previous state
       const estadoAnterior =
         historialCanvas.current[historialCanvas.current.length - 1];
-
+      fabricInstancia.current.clear();
       fabricInstancia.current.loadFromJSON(estadoAnterior, () => {
         fabricInstancia.current.renderAll();
         guardarEnBD(fabricInstancia.current);
@@ -110,7 +112,6 @@ export default function EspacioTrabajo({ proyectoId, marcarCambio }) {
       });
     } else if (historialCanvas.current.length === 1) {
       // Clear to blank
-      historialCanvas.current = [];
       fabricInstancia.current.clear();
       fabricInstancia.current.backgroundColor = "#f8fafc";
       fabricInstancia.current.renderAll();
