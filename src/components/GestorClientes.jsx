@@ -5,14 +5,14 @@ import { PlusCircle, User, Trash2, ChevronRight, Ruler } from "lucide-react";
 import EditorMedidas from "./EditorMedidas";
 
 export default function GestorClientes({ onSeleccionarProyecto }) {
-  // 1. SELECTORES DE DATOS (DEXIE)
+  // 1. SELECTOR REACTIVO (Actualiza la UI automáticamente cuando la DB cambia)
   const clientes = useLiveQuery(() => db.clientes.toArray());
 
   // 2. ESTADOS LOCALES
   const [nuevoNombre, setNuevoNombre] = useState("");
-  const [clienteEnEdicion, setClienteEnEdicion] = useState(null);
+  const [clienteIdEnEdicion, setClienteIdEnEdicion] = useState(null);
 
-  // 3. LÓGICA DE NEGOCIO
+  // 3. FUNCIONES DE BASE DE DATOS
   const agregarCliente = async () => {
     if (!nuevoNombre.trim()) return;
 
@@ -20,128 +20,135 @@ export default function GestorClientes({ onSeleccionarProyecto }) {
       await db.clientes.add({
         nombre: nuevoNombre,
         medidas: {
-          cuello: 38, // Medidas estándar iniciales (promedio)
+          cuello: 38,
           pecho: 95,
           cintura: 85,
           cadera: 100,
           hombros: 45,
           brazo: 60,
-          puño: 20,
+          puño: 20, // Nuevos campos inicializados
           tiro: 100,
         },
         ultimaActualizacion: new Date().toISOString(),
       });
       setNuevoNombre("");
     } catch (error) {
-      console.error("Error al agregar cliente:", error);
+      console.error("Error al crear cliente:", error);
     }
   };
 
   const eliminarCliente = async (id, e) => {
-    e.stopPropagation(); // Evita que se abra el proyecto al intentar borrar
-    if (window.confirm("¿Estás segura de eliminar este perfil de cliente?")) {
+    e.stopPropagation(); // Evita navegar al taller al intentar borrar
+    if (
+      window.confirm("¿Estás segura de eliminar permanentemente este perfil?")
+    ) {
       await db.clientes.delete(id);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* MODAL DE EDICIÓN (Se muestra solo si hay un cliente seleccionado) */}
-      {clienteEnEdicion && (
+    <div className="max-w-4xl mx-auto p-4 md:p-0">
+      {/* MODAL DE EDICIÓN (Se abre solo si hay un ID seleccionado) */}
+      {clienteIdEnEdicion && (
         <EditorMedidas
-          cliente={clienteEnEdicion}
-          alCerrar={() => setClienteEnEdicion(null)}
+          clienteId={clienteIdEnEdicion}
+          alCerrar={() => setClienteIdEnEdicion(null)}
         />
       )}
 
-      {/* CABECERA */}
-      <header className="mb-8 border-b-2 border-gray-200 pb-4">
-        <h2 className="text-3xl font-bold text-slate-800">Mis Clientes</h2>
-        <p className="text-gray-500 mt-2 text-lg">
-          Gestiona perfiles y medidas precisas.
+      {/* CABECERA PRINCIPAL */}
+      <header className="mb-10 border-b-2 border-slate-200 pb-6">
+        <h2 className="text-4xl font-black text-slate-800 tracking-tight">
+          Mis Clientes
+        </h2>
+        <p className="text-slate-500 mt-2 text-lg font-medium">
+          Selecciona un perfil para diseñar o ajusta sus medidas.
         </p>
       </header>
 
-      {/* FORMULARIO DE ALTA */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 flex flex-col md:flex-row gap-4 border-2 border-slate-100">
+      {/* BARRA DE ALTA RÁPIDA */}
+      <div className="bg-white p-6 rounded-3xl shadow-sm mb-10 flex flex-col md:flex-row gap-4 border-2 border-slate-100 ring-8 ring-slate-50/50">
         <input
           type="text"
           value={nuevoNombre}
           onChange={(e) => setNuevoNombre(e.target.value)}
           placeholder="Nombre del nuevo cliente..."
-          className="flex-1 text-xl p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 outline-none transition-all"
+          className="flex-1 text-xl p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium"
         />
         <button
           onClick={agregarCliente}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl min-h-[60px] text-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl min-h-[64px] text-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
         >
           <PlusCircle size={28} />
-          <span>Nuevo Perfil</span>
+          <span>Crear Perfil</span>
         </button>
       </div>
 
-      {/* GRID DE TARJETAS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {clientes?.length === 0 && (
-          <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-4 border-dashed border-slate-200">
-            <p className="text-slate-400 text-xl font-medium">
-              No hay clientes registrados aún.
+      {/* GRID DE TARJETAS DE CLIENTE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {!clientes ? (
+          <div className="col-span-full py-20 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-400 font-bold italic">
+              Cargando taller...
             </p>
           </div>
-        )}
-
-        {clientes?.map((cliente) => (
-          <div
-            key={cliente.id}
-            className="group bg-white rounded-3xl shadow-sm border-2 border-slate-100 hover:border-blue-400 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
-          >
-            {/* ZONA SUPERIOR: Navegación al taller */}
+        ) : clientes.length === 0 ? (
+          <div className="col-span-full py-24 text-center bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-200">
+            <p className="text-slate-400 text-2xl font-bold italic">
+              Tu libreta de clientes está vacía.
+            </p>
+          </div>
+        ) : (
+          clientes.map((cliente) => (
             <div
-              onClick={() => onSeleccionarProyecto(cliente.id)}
-              className="p-6 cursor-pointer flex items-center justify-between flex-1 bg-white hover:bg-slate-50 transition-colors"
+              key={cliente.id}
+              className="group bg-white rounded-[2rem] shadow-sm border-2 border-slate-100 hover:border-blue-500 hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden"
             >
-              <div className="flex items-center gap-5">
-                <div className="bg-slate-100 p-4 rounded-2xl text-slate-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                  <User size={32} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-800">
-                    {cliente.nombre}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">
-                      Listo para diseñar
+              {/* ACCESO AL TALLER (Área principal) */}
+              <div
+                onClick={() => onSeleccionarProyecto(cliente.id)}
+                className="p-8 cursor-pointer flex items-center justify-between flex-1 bg-white hover:bg-slate-50/50 transition-colors"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="bg-slate-100 p-5 rounded-3xl text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                    <User size={36} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-800 leading-tight">
+                      {cliente.nombre}
+                    </h3>
+                    <p className="text-xs text-blue-500 font-black uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Abrir Mesa de Trabajo →
                     </p>
                   </div>
                 </div>
+                <ChevronRight
+                  size={32}
+                  className="text-slate-200 group-hover:text-blue-500 group-hover:translate-x-2 transition-all"
+                />
               </div>
-              <ChevronRight
-                size={28}
-                className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"
-              />
-            </div>
 
-            {/* ZONA INFERIOR: Acciones de gestión */}
-            <div className="bg-slate-50/80 p-4 flex gap-3 border-t-2 border-slate-100">
-              <button
-                onClick={() => setClienteEnEdicion(cliente)}
-                className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-slate-200 py-3 rounded-2xl text-slate-700 font-bold hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all active:scale-95 shadow-sm"
-              >
-                <Ruler size={20} />
-                <span>Medidas</span>
-              </button>
+              {/* BARRA DE ACCIONES (Medidas y Borrado) */}
+              <div className="bg-slate-50/50 p-5 flex gap-4 border-t-2 border-slate-50">
+                <button
+                  onClick={() => setClienteIdEnEdicion(cliente.id)}
+                  className="flex-1 flex items-center justify-center gap-3 bg-white border-2 border-slate-200 py-4 rounded-2xl text-slate-700 font-bold hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all active:scale-95 shadow-sm"
+                >
+                  <Ruler size={24} />
+                  <span className="text-lg">Medidas</span>
+                </button>
 
-              <button
-                onClick={(e) => eliminarCliente(cliente.id, e)}
-                className="p-4 bg-white border-2 border-slate-200 text-slate-300 hover:text-red-500 hover:border-red-200 rounded-2xl transition-all active:scale-90"
-                title="Eliminar Perfil"
-              >
-                <Trash2 size={20} />
-              </button>
+                <button
+                  onClick={(e) => eliminarCliente(cliente.id, e)}
+                  className="p-4 bg-white border-2 border-slate-200 text-slate-300 hover:text-red-500 hover:border-red-200 rounded-2xl transition-all active:scale-90"
+                >
+                  <Trash2 size={24} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
