@@ -100,6 +100,18 @@ export default function EditorMedidas({ cliente, alCerrar }) {
             valor={cliente.medidas.brazo}
             onActualizar={actualizarMedida}
           />
+          <ControlMedida
+            label="puño"
+            campo="puño"
+            valor={cliente.medidas.puño}
+            onActualizar={actualizarMedida}
+          />
+          <ControlMedida
+            label="Tiro"
+            campo="Tiro"
+            valor={cliente.medidas.tiro}
+            onActualizar={actualizarMedida}
+          />
         </div>
       </div>
     </div>

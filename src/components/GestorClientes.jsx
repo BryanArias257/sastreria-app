@@ -26,6 +26,8 @@ export default function GestorClientes({ onSeleccionarProyecto }) {
           cadera: 100,
           hombros: 45,
           brazo: 60,
+          puño: 20,
+          tiro: 100,
         },
         ultimaActualizacion: new Date().toISOString(),
       });
