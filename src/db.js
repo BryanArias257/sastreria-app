@@ -2,9 +2,9 @@ import Dexie from "dexie";
 
 export const db = new Dexie("SastreriasDB");
 
-// Define the schema. ++id means auto-incrementing primary key.
 db.version(1).stores({
   clientes: "++id, nombre, ultimaActualizacion",
+  // Añadimos nombreProyecto como índice para facilitar búsquedas
   proyectos:
-    "++id, clienteId, nombreProyecto, notas, estadoCanvas, ultimaActualizacion",
+    "++id, clienteId, nombreProyecto, notas, estadoCanvas, ultimaActualizacion, *nombreProyecto",
 });
