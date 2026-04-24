@@ -1,36 +1,65 @@
 import { Minus, Plus, Ruler } from "lucide-react";
 import { db } from "../db";
 
-// 1. EL COMPONENTE SE DEFINE AFUERA (Nivel superior)
-const ControlMedida = ({ label, campo, valor, onActualizar }) => (
-  <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 flex flex-col gap-3">
-    <label className="text-slate-600 font-bold uppercase text-xs tracking-wider">
-      {label}
-    </label>
-    <div className="flex items-center justify-between gap-4">
-      <button
-        onClick={() => onActualizar(campo, valor - 1)}
-        className="p-3 bg-white border-2 border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-200 text-slate-600 transition-all active:scale-90"
-      >
-        <Minus size={24} />
-      </button>
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-black text-slate-800">{valor}</span>
-        <span className="text-slate-400 font-bold">cm</span>
+// 1. COMPONENTE DE CONTROL ACTUALIZADO
+const ControlMedida = ({ label, campo, valor, onActualizar }) => {
+  // Aseguramos que si el valor es undefined/null, se muestre 0
+  const valorSeguro = valor || 0;
+
+  return (
+    <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 flex flex-col gap-3">
+      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-widest">
+        {label}
+      </label>
+      <div className="flex items-center justify-between gap-2">
+        {/* Botón Menos */}
+        <button
+          onClick={() => onActualizar(campo, valorSeguro - 1)}
+          className="p-3 bg-white border-2 border-slate-200 rounded-xl hover:bg-red-50 text-slate-600 active:scale-90 transition-all"
+        >
+          <Minus size={20} />
+        </button>
+
+        {/* INPUT DE NÚMERO (Editable por teclado) */}
+        <div className="flex flex-1 items-center justify-center gap-1 bg-white border-2 border-slate-200 rounded-xl px-2 focus-within:border-blue-500 transition-colors">
+          <input
+            type="number"
+            value={valorSeguro}
+            onChange={(e) => onActualizar(campo, e.target.value)}
+            className="w-full text-center text-2xl font-black text-slate-800 bg-transparent outline-none p-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span className="text-slate-400 font-bold text-sm mr-2">cm</span>
+        </div>
+
+        {/* Botón Más */}
+        <button
+          onClick={() => onActualizar(campo, valorSeguro + 1)}
+          className="p-3 bg-white border-2 border-slate-200 rounded-xl hover:bg-green-50 text-slate-600 active:scale-90 transition-all"
+        >
+          <Plus size={20} />
+        </button>
       </div>
-      <button
-        onClick={() => onActualizar(campo, valor + 1)}
-        className="p-3 bg-white border-2 border-slate-200 rounded-xl hover:bg-green-50 hover:border-green-200 text-slate-600 transition-all active:scale-90"
-      >
-        <Plus size={24} />
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
 export default function EditorMedidas({ cliente, alCerrar }) {
-  const actualizarMedida = async (campo, valor) => {
-    const nuevasMedidas = { ...cliente.medidas, [campo]: Math.max(0, valor) };
+  const actualizarMedida = async (campo, valorRecibido) => {
+    // 2. SANITIZACIÓN: Convertimos el input (string) a número
+    let nuevoValor = parseInt(valorRecibido, 10);
+
+    // Evitamos NaN si el usuario borra todo el input
+    if (isNaN(nuevoValor)) nuevoValor = 0;
+
+    // Mantenemos valores positivos
+    nuevoValor = Math.max(0, nuevoValor);
+
+    // 3. ACTUALIZACIÓN DINÁMICA
+    const nuevasMedidas = {
+      ...cliente.medidas,
+      [campo]: nuevoValor,
+    };
+
     await db.clientes.update(cliente.id, {
       medidas: nuevasMedidas,
       ultimaActualizacion: new Date().toISOString(),
@@ -63,7 +92,7 @@ export default function EditorMedidas({ cliente, alCerrar }) {
         </div>
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-          {/* 2. PASAMOS LA FUNCIÓN ACTUALIZAR COMO PROP */}
+          {/* Seccionamos las medidas para claridad visual */}
           <ControlMedida
             label="Cuello"
             campo="cuello"
@@ -100,15 +129,17 @@ export default function EditorMedidas({ cliente, alCerrar }) {
             valor={cliente.medidas.brazo}
             onActualizar={actualizarMedida}
           />
+
+          {/* TUS NUEVOS CAMPOS */}
           <ControlMedida
-            label="puño"
+            label="Puño"
             campo="puño"
             valor={cliente.medidas.puño}
             onActualizar={actualizarMedida}
           />
           <ControlMedida
             label="Tiro"
-            campo="Tiro"
+            campo="tiro"
             valor={cliente.medidas.tiro}
             onActualizar={actualizarMedida}
           />
